@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEXONT Tech - Littlemarsa</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        :root { --primary: #2ecc71; --dark: #1e293b; --gray: #64748b; --lock: #ff7675; --light-bg: #f8fafc; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; display: flex; justify-content: center; padding: 20px; margin: 0; color: var(--dark); }
+        .card { background: white; padding: 30px; border-radius: 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); width: 100%; max-width: 450px; position: relative; min-height: 500px; box-sizing: border-box; }
+        
+        .auth-view { text-align: center; padding: 20px 0; }
+        .main-input { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #e2e8f0; margin-top: 5px; box-sizing: border-box; outline: none; font-size: 1rem; transition: 0.2s; background: var(--light-bg); }
+        .main-input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(46, 204, 113, 0.1); }
+        .divider { margin: 25px 0; color: #cbd5e0; font-size: 0.7rem; display: flex; align-items: center; gap: 10px; text-transform: uppercase; font-weight: 800; }
+        .divider hr { flex: 1; border: 0; border-top: 1px solid #eee; }
+
+        .user-header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #f1f5f9; }
+        .display-name { font-size: 1.4rem; font-weight: 800; color: var(--dark); margin: 0; letter-spacing: -0.5px; }
+        .display-email { font-size: 0.85rem; color: var(--gray); margin-top: 2px; font-weight: 500; }
+        
+        .status-badge { font-size: 0.65rem; font-weight: 800; padding: 5px 12px; border-radius: 20px; text-transform: uppercase; display: inline-block; margin-bottom: 10px; letter-spacing: 0.5px; }
+        .badge-pending { background: #fff3e0; color: #d97706; }
+        .badge-synced { background: #dcfce7; color: #15803d; }
+
+        .delivery-selector { display: flex; background: var(--light-bg); padding: 6px; border-radius: 16px; margin-bottom: 20px; gap: 6px; border: 1px solid #f1f5f9; }
+        .delivery-option { flex: 1; text-align: center; padding: 12px; border-radius: 12px; cursor: pointer; font-size: 0.85rem; font-weight: 700; color: var(--gray); transition: 0.2s ease; }
+        .delivery-option.active { background: white; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        .row { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; border-bottom: 1px solid #f8fafc; }
+        .product-info { display: flex; flex-direction: column; }
+        .product-name { font-weight: 700; color: var(--dark); font-size: 0.95rem; }
+        .product-price { font-size: 0.8rem; color: var(--primary); font-weight: 600; margin-top: 2px; }
+
+        /* STEPPER DESIGN REFINED */
+        .stepper { display: flex; align-items: center; gap: 8px; background: var(--light-bg); padding: 4px; border-radius: 12px; }
+        .btn-step { width: 34px; height: 34px; border-radius: 10px; border: none; background: white; font-weight: 800; cursor: pointer; color: var(--dark); box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .btn-step:active { transform: scale(0.95); }
+        
+        /* Modern Numeric Input */
+        .qty-input { width: 50px; background: transparent; border: none; text-align: center; font-weight: 800; font-size: 1rem; color: var(--dark); outline: none; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        button.primary { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 16px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-top: 25px; transition: 0.3s; box-shadow: 0 10px 20px -5px rgba(46, 204, 113, 0.4); }
+        button.primary:hover { background: #27ae60; transform: translateY(-1px); }
+        button.primary:disabled { background: #cbd5e0; box-shadow: none; transform: none; }
+        
+        .btn-google { background: white !important; color: #475569 !important; border: 1.5px solid #e2e8f0 !important; display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 0 !important; box-shadow: none !important; }
+        .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; border-radius: 28px; }
+        /* TOTALIZER BOX STYLING */
+.total-display {
+    background: #ecfdf5;
+    border: 1px solid #d1fae5;
+    padding: 20px;
+    border-radius: 18px;
+    margin-top: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.total-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #065f46;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.total-value {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+}
+    </style>
+</head>
+<body>
+
+<div id="app" class="card">
+    <div v-if="initLoading" class="loading-overlay">
+        <div style="font-size: 2.5rem; margin-bottom: 15px;">🚜</div>
+        <span style="font-weight: 800; color: var(--dark); font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase;">VEXONT Technologies</span>
+    </div>
+
+    <div v-if="!session" class="auth-view">
+        <h2 style="letter-spacing: -1.5px; font-size: 2.4rem; margin-bottom: 5px; color: var(--dark);">VEXONT</h2>
+        <p style="color: var(--gray); margin-bottom: 35px; font-weight: 500;">Portail Littlemarsa</p>
+
+        <button class="primary btn-google" @click="loginWithGoogle">
+            <img src="https://www.google.com/favicon.ico" width="18"> Continuer avec Google
+        </button>
+
+        <div class="divider"><hr> Propriétaire <hr></div>
+
+        <div style="text-align: left;">
+            <label style="font-size: 0.7rem; font-weight: 800; color: var(--gray); margin-left: 5px;">EMAIL ENREGISTRÉ</label>
+            <input type="email" v-model="authEmail" placeholder="nom@entreprise.com" class="main-input">
+            
+            <button class="primary" @click="checkIdentity" :disabled="loading || !authEmail">
+                {{ loading ? 'VÉRIFICATION...' : 'ACCÉDER AU REGISTRE' }}
+            </button>
+        </div>
+
+        <div v-if="showOTPNote" style="margin-top: 15px; font-size: 0.85rem; color: var(--primary); font-weight: 700; background: #e8f5e9; padding: 10px; border-radius: 10px;">
+            📩 Lien envoyé ! Vérifiez vos emails.
+        </div>
+    </div>
+
+    <div v-else-if="!done">
+        <div class="user-header">
+            <span v-if="currentStatus === 'synced'" class="status-badge badge-synced">✓ Commande Validée</span>
+            <span v-else-if="currentStatus === 'pending'" class="status-badge badge-pending">⏳ En attente de sync</span>
+            <span v-else class="status-badge" style="background:#f1f5f9; color:#64748b;">Nouveau Client</span>
+            
+            <h2 class="display-name">{{ userName || userEmail.split('@')[0] }}</h2>
+            <div class="display-email">{{ userEmail }}</div>
+        </div>
+
+        <div class="delivery-selector">
+            <div class="delivery-option" :class="{ active: deliveryType === 'pickup' }" @click="deliveryType = 'pickup'">🏪 Retrait</div>
+            <div class="delivery-option" :class="{ active: deliveryType === 'delivery' }" @click="deliveryType = 'delivery'">🚚 Livraison</div>
+        </div>
+
+        <div v-for="p in catalog" :key="p.id" class="row">
+            <div class="product-info">
+                <span class="product-name">{{ p.name }}</span>
+                <span class="product-price">{{ p.price.toFixed(3) }} TND / {{ p.unit || 'u' }}</span>
+            </div>
+            <div class="stepper">
+                <button class="btn-step" @click="updateQty(p.name, -1, p.unit)" :disabled="isLocked(p.name)">-</button>
+                <input 
+                    class="qty-input"
+                    type="number" 
+                    v-model.number="form[p.name]" 
+                    :placeholder="p.unit === 'kg' ? '0.0' : '0'"
+                    :step="p.unit === 'kg' ? 0.1 : 1"
+                    :inputmode="p.unit === 'kg' ? 'decimal' : 'numeric'"
+                    @blur="sanitize(p.name, p.unit)"
+                >
+                <button class="btn-step" @click="updateQty(p.name, 1, p.unit)">+</button>
+            </div>
+        </div>
+        <div class="total-display" v-if="orderTotal > 0">
+    <div class="total-label">Total de la commande</div>
+    <div class="total-value">{{ orderTotal.toFixed(3) }} <span style="font-size: 0.8rem;">TND</span></div>
+</div>
+
+<button 
+    class="primary" 
+    @click="submit" 
+    :disabled="loading || !isModified || orderTotal <= 0"
+>
+    {{ loading ? 'Mise à jour...' : (hasExistingOrder ? 'MODIFIER LA COMMANDE' : 'VALIDER LA COMMANDE') }}
+</button>
+
+       
+        
+        <button @click="logout" style="background:none; border:none; color:var(--gray); font-size:0.75rem; width:100%; margin-top:30px; cursor:pointer; font-weight:700; text-decoration: underline;">DÉCONNEXION</button>
+    </div>
+
+    <div v-else style="text-align:center; padding: 40px 10px;">
+        <div style="font-size: 4.5rem; margin-bottom: 20px;">✅</div>
+        <h3 style="font-weight: 800; font-size: 1.5rem; margin-bottom: 10px;">Transmission Réussie</h3>
+        <p style="color: var(--gray); font-size: 0.95rem; line-height: 1.5;">Le registre a été mis à jour pour Littlemarsa.</p>
+        <button class="primary" @click="done = false">RETOUR AU PORTAIL</button>
+    </div>
+</div>
+
+<script>
+const { createClient } = supabase
+const _supabase = createClient('https://ykepwldrsustjvfdoqzm.supabase.co', 'sb_publishable_oSk2nIt_Bga4Mc40AKrKnQ_OwwbJqTQ')
+
+Vue.createApp({
+    data() {
+        return {
+            session: null,
+            userEmail: '',
+            userName: '',
+            authEmail: '',
+            catalog: [],
+            form: {},
+            originalForm: {},
+            deliveryType: 'pickup',
+            originalDeliveryType: 'pickup',
+            currentStatus: null,
+            initLoading: true,
+            loading: false,
+            done: false,
+            showOTPNote: false,
+            hasExistingOrder: false
+        }
+    },
+    computed: {
+    isModified() { 
+        const formChanged = JSON.stringify(this.form) !== JSON.stringify(this.originalForm);
+        const deliveryChanged = this.deliveryType !== this.originalDeliveryType;
+        return formChanged || deliveryChanged;
+    },
+    // ADD THIS CALCULATOR
+    orderTotal() {
+    return Object.entries(this.form).reduce((acc, [name, qty]) => {
+        const product = this.catalog.find(p => p.name === name);
+        // Ensure price is a number and qty is treated as 0 if empty/invalid
+        const price = product ? parseFloat(product.price) : 0;
+        const validQty = parseFloat(qty) || 0; 
+        return acc + (price * validQty);
+    }, 0);
+}
+},
+    async mounted() {
+        await this.fetchCatalog();
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (session) await this.handleAuth(session);
+        else this.initLoading = false;
+
+        _supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session) await this.handleAuth(session);
+        });
+    },
+    methods: {
+        async fetchCatalog() {
+            const { data } = await _supabase.from('catalog').select('*').eq('is_active', true).order('name');
+            this.catalog = data || [];
+        },
+        async checkIdentity() {
+            this.loading = true;
+            const email = this.authEmail.toLowerCase().trim();
+            // Check if client exists using the 'email' column
+            const { data: client } = await _supabase.from('clients').select('*').eq('email', email).maybeSingle();
+            const isTrusted = localStorage.getItem('vexont_trusted_' + email);
+            
+            if (client && isTrusted) {
+                this.userEmail = client.email;
+                this.userName = client.name; // Fixed: using 'name' instead of 'full_name'
+                this.session = { user: { email: client.email } }; 
+                await this.fetchExistingOrder();
+            } else {
+                const { error } = await _supabase.auth.signInWithOtp({ email: email, options: { emailRedirectTo: window.location.origin } });
+                if (!error) this.showOTPNote = true;
+                else alert("Erreur OTP: " + error.message);
+            }
+            this.loading = false;
+        },
+        async handleAuth(session) {
+            this.session = session;
+            this.userEmail = session.user.email;
+            
+            // Check if user exists in our custom 'clients' table
+            const { data: client, error: fetchError } = await _supabase.from('clients').select('*').eq('email', this.userEmail).maybeSingle();
+            
+            if (!client) {
+                const nameFromAuth = session.user.user_metadata.full_name || session.user.email.split('@')[0];
+                // Fixed: Inserting into 'name' column to match your DB schema
+                const { error: insertError } = await _supabase.from('clients').insert({ 
+                    email: this.userEmail, 
+                    name: nameFromAuth 
+                });
+                if (insertError) console.error("Client creation failed:", insertError);
+                this.userName = nameFromAuth;
+            } else {
+                this.userName = client.name;
+            }
+            
+            localStorage.setItem('vexont_trusted_' + this.userEmail, 'true');
+            await this.fetchExistingOrder();
+            this.initLoading = false;
+        },
+        async fetchExistingOrder() {
+            const { data } = await _supabase.from('submissions').select('*').eq('client_email', this.userEmail).maybeSingle();
+            if (data) {
+                this.hasExistingOrder = true;
+                this.currentStatus = data.status;
+                const items = typeof data.items === 'string' ? JSON.parse(data.items) : data.items;
+                this.form = JSON.parse(JSON.stringify(items || {}));
+                this.originalForm = JSON.parse(JSON.stringify(items || {}));
+                this.deliveryType = data.delivery_type || 'pickup';
+                this.originalDeliveryType = data.delivery_type || 'pickup';
+            }
+        },
+        updateQty(name, delta, unit) {
+            let current = this.form[name] || 0;
+            const step = (unit === 'kg') ? 0.5 : 1;
+            let val = current + (delta * step);
+            const floor = (this.hasExistingOrder && this.currentStatus === 'synced') ? (this.originalForm[name] || 0) : 0;
+            if (val >= floor) {
+                if (val <= 0) delete this.form[name]; 
+                else this.form[name] = parseFloat(val.toFixed(2));
+            }
+        },
+        sanitize(name, unit) {
+            let val = this.form[name];
+            if (val === undefined || val === null || val === '') {
+                delete this.form[name];
+                return;
+            }
+            if (unit !== 'kg') {
+                this.form[name] = Math.round(val);
+            } else {
+                this.form[name] = parseFloat(parseFloat(val).toFixed(2));
+            }
+        },
+        isLocked(name) { return this.currentStatus === 'synced' && (this.form[name] || 0) <= (this.originalForm[name] || 0); },
+        async submit() {
+            this.loading = true;
+            console.log("Attempting submission for:", this.userEmail);
+            
+            // Final check: Ensure client exists in 'clients' before 'submissions' (FK requirement)
+            await _supabase.from('clients').upsert({ 
+                email: this.userEmail, 
+                name: this.userName || this.userEmail 
+            }, { onConflict: 'email' });
+
+            const { error } = await _supabase.from('submissions').upsert({ 
+                client_email: this.userEmail,
+                client_name: this.userName || this.userEmail,
+                items: this.form,
+                delivery_type: this.deliveryType,
+                status: 'pending',
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'client_email' });
+            
+            if (error) {
+                console.error("Submission error:", error);
+                alert("Erreur lors de la validation: " + error.message);
+            } else {
+                this.done = true;
+                await this.fetchExistingOrder();
+            }
+            this.loading = false;
+        },
+        async loginWithGoogle() { 
+            await _supabase.auth.signInWithOAuth({ 
+                provider: 'google', 
+                options: { redirectTo: window.location.origin } 
+            }); 
+        },
+        async logout() { 
+            localStorage.clear();
+            await _supabase.auth.signOut();
+            window.location.replace(window.location.origin);
+        }
+    }
+}).mount('#app')
+</script>
+</body>
+</html>
