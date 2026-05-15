@@ -337,9 +337,20 @@ Vue.createApp({
             this.loading = false;
         },
         async loginWithGoogle() { 
+    const isLocal = window.location.hostname === 'localhost';
+    const redirectUrl = isLocal 
+        ? window.location.origin 
+        : 'https://m3hdib.github.io/littlemarsa/';
+
     await _supabase.auth.signInWithOAuth({ 
         provider: 'google', 
-        options: { redirectTo: 'https://m3hdib.github.io/littlemarsa/' } 
+        options: { 
+            redirectTo: redirectUrl,
+            queryParams: {
+                access_type: 'offline',
+                prompt: 'consent',
+            }
+        } 
     }); 
 },
         async logout() { 
