@@ -337,11 +337,11 @@ Vue.createApp({
             this.loading = false;
         },
         async loginWithGoogle() { 
-            await _supabase.auth.signInWithOAuth({ 
-                provider: 'google', 
-                options: { redirectTo: window.location.origin } 
-            }); 
-        },
+    await _supabase.auth.signInWithOAuth({ 
+        provider: 'google', 
+        options: { redirectTo: 'https://m3hdib.github.io/littlemarsa/' } 
+    }); 
+},
         async logout() { 
             localStorage.clear();
             await _supabase.auth.signOut();
