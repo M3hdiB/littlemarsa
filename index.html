@@ -364,7 +364,7 @@ Vue.createApp({
     const isLocal = window.location.hostname === 'localhost';
     const redirectUrl = isLocal 
         ? window.location.origin 
-        : 'https://m3hdib.github.io/littlemarsa/';
+        : 'https://m3hdib.github.io';
 
     await _supabase.auth.signInWithOAuth({ 
         provider: 'google', 
@@ -381,7 +381,7 @@ Vue.createApp({
     localStorage.clear();
     await _supabase.auth.signOut();
     // Redirect back to the subfolder, not the root
-    window.location.replace('https://m3hdib.github.io/littlemarsa/');
+    window.location.replace('https://m3hdib.github.io');
 }
     }
 }).mount('#app')
