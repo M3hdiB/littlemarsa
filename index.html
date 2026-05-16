@@ -176,7 +176,17 @@
 
 <script>
 const { createClient } = supabase
-const _supabase = createClient('https://ykepwldrsustjvfdoqzm.supabase.co', 'sb_publishable_oSk2nIt_Bga4Mc40AKrKnQ_OwwbJqTQ')
+const _supabase = createClient(
+    'https://ykepwldrsustjvfdoqzm.supabase.co', 
+    'sb_publishable_oSk2nIt_Bga4Mc40AKrKnQ_OwwbJqTQ',
+    { 
+        auth: { 
+            autoRefreshToken: true, 
+            persistSession: true, 
+            detectSessionInUrl: true 
+        } 
+    }
+)
 
 Vue.createApp({
     data() {
@@ -216,15 +226,29 @@ Vue.createApp({
 }
 },
     async mounted() {
-        await this.fetchCatalog();
-        const { data: { session } } = await _supabase.auth.getSession();
-        if (session) await this.handleAuth(session);
-        else this.initLoading = false;
+    await this.fetchCatalog();
+    
+    // 1. Force check for session in URL (fixes the login loop)
+    const { data: { session }, error } = await _supabase.auth.getSession();
+    
+    if (session) {
+        await this.handleAuth(session);
+        // Clean the URL hash so it looks professional
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+        // Only show login if no session is found
+        this.initLoading = false;
+    }
 
-        _supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session) await this.handleAuth(session);
-        });
-    },
+    // 2. Listen for future changes
+    _supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            await this.handleAuth(session);
+        } else if (event === 'SIGNED_OUT') {
+            this.session = null;
+        }
+    });
+},
     methods: {
         async fetchCatalog() {
             const { data } = await _supabase.from('catalog').select('*').eq('is_active', true).order('name');
@@ -354,10 +378,11 @@ Vue.createApp({
     }); 
 },
         async logout() { 
-            localStorage.clear();
-            await _supabase.auth.signOut();
-            window.location.replace(window.location.origin);
-        }
+    localStorage.clear();
+    await _supabase.auth.signOut();
+    // Redirect back to the subfolder, not the root
+    window.location.replace('https://m3hdib.github.io/littlemarsa/');
+}
     }
 }).mount('#app')
 </script>
